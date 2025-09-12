@@ -1,0 +1,21 @@
+{
+  "name": "clay-mcp-dxt",
+  "version": "1.0.4",
+  "type": "module",
+  "private": true,
+  "main": "server/index.js",
+  "scripts": {
+    "build": "mcpb pack . clay-mcp.dxt",
+    "update:clay": "npm install @clayhq/clay-mcp@latest",
+    "test": "node server/index.js --version"
+  },
+  "dependencies": {
+    "@clayhq/clay-mcp": "^1.0.4"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

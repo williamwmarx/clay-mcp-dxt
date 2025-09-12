@@ -1,0 +1,100 @@
+name: Sync Version with Clay MCP
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Prevent race conditions
+concurrency:
+  group: sync-version-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync-version:
+    # Only run on Dependabot PRs that update @clayhq/clay-mcp
+    if: github.actor == 'dependabot[bot]' && contains(github.event.pull_request.title, 'clay-mcp')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Sync versions
+        run: |
+          set -euo pipefail
+          
+          # Extract Clay MCP version from package.json
+          RAW_VERSION=$(node -p "require('./package.json').dependencies['@clayhq/clay-mcp'] || ''")
+          
+          if [ -z "$RAW_VERSION" ]; then
+            echo "Error: @clayhq/clay-mcp not found in dependencies"
+            exit 1
+          fi
+          
+          # Clean up version string (remove ^, ~, etc.)
+          CLAY_VERSION=$(echo "$RAW_VERSION" | sed -E 's/^[\^~>=<\*\s]+//g' | sed -E 's/\s.*$//')
+          
+          # Basic semver validation
+          if ! echo "$CLAY_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "Error: Invalid version format: $CLAY_VERSION"
+            exit 1
+          fi
+          
+          echo "Syncing to Clay MCP version: $CLAY_VERSION"
+          
+          # Update version in package.json
+          npm version "$CLAY_VERSION" --no-git-tag-version --allow-same-version
+          
+          # Update version in manifest.json
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            manifest.version = process.argv[1];
+            fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2) + '\\n');
+          " "$CLAY_VERSION"
+          
+          # Check if there are changes
+          if git diff --quiet; then
+            echo "No version changes needed"
+            exit 0
+          fi
+          
+          # Configure git
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          
+          # Commit and push
+          git add package.json package-lock.json manifest.json
+          git commit -m "chore: sync version to Clay MCP v$CLAY_VERSION [skip ci]"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+      
+      - name: Comment on PR
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const version = pkg.version;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ Version synced to **v${version}**`
+            });

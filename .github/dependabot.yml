@@ -1,0 +1,21 @@
+# Dependabot configuration for automated dependency updates
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "America/New_York"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # Group Clay MCP updates into a single PR
+    groups:
+      clay-mcp:
+        patterns:
+          - "@clayhq/clay-mcp"
+        update-types:
+          - "minor"
+          - "patch"
+          - "major"

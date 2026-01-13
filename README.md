@@ -1,5 +1,17 @@
 # Clay MCP Desktop Extension
 
+> **⚠️ No Longer Maintained**
+>
+> Clay has released an official remote MCP server at [mcp.clay.earth/mcp](https://mcp.clay.earth/mcp), making this wrapper unnecessary.
+>
+> **To set up the official Clay MCP:**
+> 1. In the Clay app, go to **App Menu > Settings > Integrations > MCP**
+> 2. Follow the instructions to connect Clay to Claude, ChatGPT, or third-party tools
+>
+> See the [Nexus 4.0 announcement](https://library.clay.earth/hc/en-us/articles/45377078166427-Introducing-Nexus-4-0-and-an-exclusive-invitation#h_01KET72TBHBG1K7TAD5B1J156H) for more details.
+
+---
+
 This Desktop Extension connects Claude to Clay's personal CRM platform. This repo simply wraps [Clay's MCP Server](https://github.com/clay-inc/clay-mcp) in a [Desktop Extension](https://github.com/anthropics/mcpb) (.dxt) so that it can be installed in one click.
 
 ## Installation
